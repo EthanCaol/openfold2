@@ -87,7 +87,7 @@ class TestImportWeights(unittest.TestCase):
             model = AlphaFold(c)
             model.eval()
 
-            d = torch.load(pt_path)
+            d = torch.load(pt_path, weights_only=True)
 
             import_openfold_weights_(
                 model=model,

@@ -131,7 +131,7 @@ class TestCuEquivarianceKernel(unittest.TestCase):
         batch = tensor_tree_map(move_dim, batch)
         # Restrict this test to use only torch.float32 precision due to instability with torch.bfloat16
         # https://github.com/aqlaboratory/openfold/issues/532
-        with torch.no_grad(), torch.cuda.amp.autocast(dtype=torch.float32):
+        with torch.no_grad(), torch.amp.autocast("cuda", dtype=torch.float32):
                 model = compare_utils.get_global_pretrained_openfold()
                 model.globals.use_deepspeed_evo_attention = False
                 model.globals.use_cuequivariance_attention = False

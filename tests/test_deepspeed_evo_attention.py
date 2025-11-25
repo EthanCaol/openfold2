@@ -182,7 +182,7 @@ class TestDeepSpeedKernel(unittest.TestCase):
             "pair": torch.randint(0, 2, (n_res, n_res), device='cuda', dtype=dtype),
         }
 
-        with torch.cuda.amp.autocast(dtype=dtype):
+        with torch.amp.autocast("cuda", dtype=dtype):
             model = compare_utils.get_global_pretrained_openfold()
             out_repro_msa, out_repro_pair = model.evoformer.blocks[0](
                 activations["msa"],
@@ -317,7 +317,7 @@ class TestDeepSpeedKernel(unittest.TestCase):
         batch = tensor_tree_map(move_dim, batch)
         # Restrict this test to use only torch.float32 precision due to instability with torch.bfloat16
         # https://github.com/aqlaboratory/openfold/issues/532
-        with torch.no_grad(), torch.cuda.amp.autocast(dtype=torch.float32):
+        with torch.no_grad(), torch.amp.autocast("cuda", dtype=torch.float32):
                 model = compare_utils.get_global_pretrained_openfold()
                 model.globals.use_deepspeed_evo_attention = False
                 out_repro = model(batch)

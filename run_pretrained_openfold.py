@@ -107,11 +107,11 @@ def precompute_alignments(tags, seqs, alignment_dir, args):
                     uniprot_database_path=args.uniprot_database_path,
                     template_searcher=template_searcher,
                     use_small_bfd=args.bfd_database_path is None,
-                    no_cpus=args.cpus
+                    no_cpus=args.cpus,
                 )
 
             alignment_runner.run(
-                tmp_fasta_path, local_alignment_dir
+                tmp_fasta_path, local_alignment_dir,
             )
         else:
             logger.info(
