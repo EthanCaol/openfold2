@@ -34,6 +34,12 @@ ROOT_DIR="${DOWNLOAD_DIR}/small_bfd"
 SOURCE_URL="https://storage.googleapis.com/alphafold-databases/reduced_dbs/bfd-first_non_consensus_sequences.fasta.gz"
 BASENAME=$(basename "${SOURCE_URL}")
 
+# 如果文件已经存在, 则跳过
+if [ -f "${ROOT_DIR}/${BASENAME%.gz}" ]; then
+    echo "| Small BFD 数据库已经存在, 跳过下载"
+    exit 0
+fi
+
 mkdir --parents "${ROOT_DIR}"
-aria2c "${SOURCE_URL}" --dir="${ROOT_DIR}"
-gunzip "${ROOT_DIR}/${BASENAME}"
+aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
+pigz -d -p 8 "${ROOT_DIR}/${BASENAME}"

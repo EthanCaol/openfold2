@@ -32,7 +32,6 @@ fi
 DOWNLOAD_DIR="$1"
 ROOT_DIR="${DOWNLOAD_DIR}"
 SOURCE_URL="http://wwwuser.gwdg.de/~compbiol/colabfold/colabfold_envdb_202108.tar.gz"
-BASENAME=$(basename "${SOURCE_URL}")
 
 mkdir --parents "${ROOT_DIR}"
-aria2c "${SOURCE_URL}" --dir="${ROOT_DIR}" -x 4 --check-certificate=false
+aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}" -x 4 --check-certificate=false

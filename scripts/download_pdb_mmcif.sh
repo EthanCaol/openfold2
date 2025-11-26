@@ -46,16 +46,16 @@ rsync --recursive --links --perms --times --compress --info=progress2 --delete -
   "${RAW_DIR}"
 
 echo "Unzipping all mmCIF files..."
-find "${RAW_DIR}/" -type f -iname "*.gz" -exec gunzip {} +
+find "${RAW_DIR}/" -type f -iname "*.gz" -exec pigz -d -p 8 {} +
 
 echo "Flattening all mmCIF files..."
 mkdir --parents "${MMCIF_DIR}"
 find "${RAW_DIR}" -type d -empty -delete  # Delete empty directories.
 for subdir in "${RAW_DIR}"/*; do
-  mv "${subdir}/"*.cif "${MMCIF_DIR}"
+    mv "${subdir}/"*.cif "${MMCIF_DIR}"
 done
 
 # Delete empty download directory structure.
 find "${RAW_DIR}" -type d -empty -delete
 
-aria2c "ftp://ftp.wwpdb.org/pub/pdb/data/status/obsolete.dat" --dir="${ROOT_DIR}"
+aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "ftp://ftp.wwpdb.org/pub/pdb/data/status/obsolete.dat" --dir="${ROOT_DIR}"

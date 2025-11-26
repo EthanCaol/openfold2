@@ -40,32 +40,32 @@ fi
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
 if [[ "${DOWNLOAD_MODE}" = full_dbs ]] ; then
-  echo "Downloading BFD..."
+  echo "| 开始下载 BFD"
   bash "${SCRIPT_DIR}/download_bfd.sh" "${DOWNLOAD_DIR}"
 else
-  echo "Downloading Small BFD..."
+  echo "| 开始下载 Small BFD 数据库"
   bash "${SCRIPT_DIR}/download_small_bfd.sh" "${DOWNLOAD_DIR}"
 fi
 
-echo "Downloading MGnify..."
+echo "| 开始下载 MGnify 数据库"
 bash "${SCRIPT_DIR}/download_mgnify.sh" "${DOWNLOAD_DIR}"
 
-echo "Downloading PDB70..."
+echo "| 开始下载 PDB70 数据库"
 bash "${SCRIPT_DIR}/download_pdb70.sh" "${DOWNLOAD_DIR}"
 
-echo "Downloading PDB mmCIF files..."
+echo "| 开始下载 PDB mmCIF files 数据库"
 bash "${SCRIPT_DIR}/download_pdb_mmcif.sh" "${DOWNLOAD_DIR}"
 
-echo "Downloading Uniref30..."
+echo "| 开始下载 Uniref30 数据库"
 bash "${SCRIPT_DIR}/download_uniref30.sh" "${DOWNLOAD_DIR}"
 
-echo "Downloading Uniref90..."
+echo "| 开始下载 Uniref90 数据库"
 bash "${SCRIPT_DIR}/download_uniref90.sh" "${DOWNLOAD_DIR}"
 
-echo "Downloading UniProt..."
+echo "| 开始下载 UniProt 数据库"
 bash "${SCRIPT_DIR}/download_uniprot.sh" "${DOWNLOAD_DIR}"
 
-echo "Downloading PDB SeqRes..."
+echo "| 开始下载 PDB SeqRes 数据库"
 bash "${SCRIPT_DIR}/download_pdb_seqres.sh" "${DOWNLOAD_DIR}"
 
-echo "All data downloaded."
+echo "| 所有数据库下载完成"

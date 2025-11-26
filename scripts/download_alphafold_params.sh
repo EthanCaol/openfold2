@@ -35,7 +35,7 @@ SOURCE_URL="https://storage.googleapis.com/alphafold/alphafold_params_2022-12-06
 BASENAME=$(basename "${SOURCE_URL}")
 
 mkdir --parents "${ROOT_DIR}"
-aria2c "${SOURCE_URL}" --dir="${ROOT_DIR}"
+aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
 tar --extract --verbose --file="${ROOT_DIR}/${BASENAME}" \
   --directory="${ROOT_DIR}" --preserve-permissions
 rm "${ROOT_DIR}/${BASENAME}"

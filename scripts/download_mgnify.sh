@@ -36,6 +36,20 @@ ROOT_DIR="${DOWNLOAD_DIR}/mgnify"
 SOURCE_URL="https://storage.googleapis.com/alphafold-databases/v2.3/mgy_clusters_2022_05.fa.gz"
 BASENAME=$(basename "${SOURCE_URL}")
 
+# 如果文件已经存在, 则跳过
+if [ -f "${ROOT_DIR}/${BASENAME%.gz}" ]; then
+    echo "| MGnify 数据库已经存在, 跳过下载"
+    exit 0
+fi
+
 mkdir --parents "${ROOT_DIR}"
-aria2c "${SOURCE_URL}" --dir="${ROOT_DIR}"
-gunzip "${ROOT_DIR}/${BASENAME}"
+
+# 如果压缩包已经存在, 并且没有控制文件(.aria2), 则跳过下载
+if [ -f "${ROOT_DIR}/${BASENAME}" ] && [ ! -f "${ROOT_DIR}/${BASENAME}.aria2" ]; then
+    echo "| MGnify 数据库压缩包已经下载完成, 跳过下载"
+else
+    aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
+fi
+
+echo "| 开始解压 MGnify 数据库"
+pigz -d -p 8 "${ROOT_DIR}/${BASENAME}"
