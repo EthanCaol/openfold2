@@ -43,7 +43,6 @@ export MAX_JOBS=12
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
 export TORCH_CUDA_ARCH_LIST="8.9" # 4070TS
-export PYTHONWARNINGS="ignore::FutureWarning"
 
 # 安装Python包
 mamba install -y -f environment.yml
@@ -55,7 +54,6 @@ proxy_off && bash scripts/download_alphafold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
 bash scripts/run_unit_tests.sh
-
 
 proxy_off && bash scripts/download_alphafold_dbs.sh openfold/resources reduced_dbs
 bash examples/monomer/inference.sh
