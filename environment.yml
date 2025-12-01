@@ -1,4 +1,3 @@
-name: openfold2
 channels:
   - conda-forge
   - bioconda

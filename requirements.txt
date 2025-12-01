@@ -11,11 +11,12 @@ ml-collections
 PyYAML
 openmm
 biopython
-modelcif==0.7
-dm-tree==0.1.6
-deepspeed==0.14.5
+modelcif
+dm-tree
+deepspeed
 
 # 根据 PyTorch 和 CUDA 版本, 安装对应的 FlashAttention 版本
 # https://github.com/Dao-AILab/flash-attention/releases
 git+https://github.com/NVIDIA/dllogger.git
 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp313-cp313-linux_x86_64.whl
+

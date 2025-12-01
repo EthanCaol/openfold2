@@ -258,7 +258,7 @@ class TestDeepSpeedKernel(unittest.TestCase):
                 torch.as_tensor(pair_act).cuda(),
                 torch.as_tensor(pair_mask).cuda(),
                 templ_dim=0,
-                inplace_safe=False
+                inplace_safe=False,
             )
             out_repro = out_repro["template_pair_embedding"].cpu()
 
@@ -269,7 +269,7 @@ class TestDeepSpeedKernel(unittest.TestCase):
                 torch.as_tensor(pair_act).cuda(),
                 torch.as_tensor(pair_mask).cuda(),
                 templ_dim=0,
-                inplace_safe=False
+                inplace_safe=False,
             )
             out_repro_ds = out_repro_ds["template_pair_embedding"].cpu()
 
@@ -318,7 +318,7 @@ class TestDeepSpeedKernel(unittest.TestCase):
         # Restrict this test to use only torch.float32 precision due to instability with torch.bfloat16
         # https://github.com/aqlaboratory/openfold/issues/532
         with torch.no_grad(), torch.amp.autocast("cuda", dtype=torch.float32):
-                model = compare_utils.get_global_pretrained_openfold()
+                model = compare_utils.get_global_pretrained_openfold().cuda()
                 model.globals.use_deepspeed_evo_attention = False
                 out_repro = model(batch)
 

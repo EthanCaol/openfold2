@@ -40,8 +40,7 @@ extra_cuda_flags = [
 
 def get_cuda_bare_metal_version(cuda_dir):
     if cuda_dir==None or torch.version.cuda==None:
-        print("CUDA is not found, cpu version is installed")
-        return None, -1, 0
+        assert False, "CUDA is not found"
     else:
         raw_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True)
         output = raw_output.split()
