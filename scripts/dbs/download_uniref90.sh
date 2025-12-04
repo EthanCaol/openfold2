@@ -1,4 +1,7 @@
 #!/bin/bash
+# Downloads and unzips the UniRef90 database for AlphaFold.
+#
+# Usage: bash download_uniref90.sh /path/to/download/directory
 set -e
 
 if [[ $# -eq 0 ]]; then
@@ -6,18 +9,17 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
-if ! command -v aria2c &>/dev/null; then
+if ! command -v aria2c &> /dev/null ; then
     echo "Error: aria2c could not be found. Please install aria2c (sudo apt install aria2)."
     exit 1
 fi
 
 DOWNLOAD_DIR="$1"
-ROOT_DIR="${DOWNLOAD_DIR}/params"
-SOURCE_URL="https://storage.googleapis.com/alphafold/alphafold_params_2022-12-06.tar"
+ROOT_DIR="${DOWNLOAD_DIR}/uniref90"
+SOURCE_URL="ftp://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref90/uniref90.fasta.gz"
 BASENAME=$(basename "${SOURCE_URL}")
 
 mkdir -p "${ROOT_DIR}"
 aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
-tar --extract --verbose --file="${ROOT_DIR}/${BASENAME}" \
-    --directory="${ROOT_DIR}" --preserve-permissions
-rm "${ROOT_DIR}/${BASENAME}"
+gunzip "${ROOT_DIR}/${BASENAME}"
+

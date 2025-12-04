@@ -1,19 +1,4 @@
 #!/bin/bash
-#
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 # Downloads, unzips and merges the SwissProt and TrEMBL databases for
 # AlphaFold-Multimer.
 #
@@ -41,7 +26,7 @@ SPROT_SOURCE_URL="ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/know
 SPROT_BASENAME=$(basename "${SPROT_SOURCE_URL}")
 SPROT_UNZIPPED_BASENAME="${SPROT_BASENAME%.gz}"
 
-mkdir --parents "${ROOT_DIR}"
+mkdir -p "${ROOT_DIR}"
 aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${TREMBL_SOURCE_URL}" --dir="${ROOT_DIR}"
 aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SPROT_SOURCE_URL}" --dir="${ROOT_DIR}"
 pushd "${ROOT_DIR}"

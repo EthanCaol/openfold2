@@ -1,6 +1,5 @@
 #!/bin/bash
-#
-# Copyright 2021 DeepMind Technologies Limited
+# Copyright 2021 AlQuraishi Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Downloads and unzips the UniRef90 database for AlphaFold.
+# Downloads and unzips the BFD database for AlphaFold.
 #
-# Usage: bash download_uniref90.sh /path/to/download/directory
+# Usage: bash download_bfd.sh /path/to/download/directory
 set -e
 
 if [[ $# -eq 0 ]]; then
@@ -30,11 +29,15 @@ if ! command -v aria2c &> /dev/null ; then
 fi
 
 DOWNLOAD_DIR="$1"
-ROOT_DIR="${DOWNLOAD_DIR}/uniref90"
-SOURCE_URL="ftp://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref90/uniref90.fasta.gz"
+ROOT_DIR="${DOWNLOAD_DIR}/uniref30"
+# Mirror of:
+# https://wwwuser.gwdg.de/~compbiol/uniclust/2021_03/UniRef30_2021_03.tar.gz
+SOURCE_URL="https://storage.googleapis.com/alphafold-databases/v2.3/UniRef30_2021_03.tar.gz"
 BASENAME=$(basename "${SOURCE_URL}")
 
-mkdir --parents "${ROOT_DIR}"
-aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
-gunzip "${ROOT_DIR}/${BASENAME}"
+mkdir -p "${ROOT_DIR}"
+aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}" -x 4 --check-certificate=false
+tar --extract --verbose --file="${ROOT_DIR}/${BASENAME}" \
+  --directory="${ROOT_DIR}"
+rm "${ROOT_DIR}/${BASENAME}"
 

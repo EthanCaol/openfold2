@@ -23,6 +23,16 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 unzip awscliv2.zip
 sudo ./aws/install && rm -rf awscliv2.zip aws
 
+# 安装 s5cmd
+wget https://github.com/peak/s5cmd/releases/download/v2.3.0/s5cmd_2.3.0_Linux-64bit.tar.gz
+mkdir s5cmd_temp && tar -xvf s5cmd_2.3.0_Linux-64bit.tar.gz -C s5cmd_temp
+sudo mv s5cmd_temp/s5cmd /usr/local/bin/s5cmd
+rm -rf s5cmd_temp s5cmd_2.3.0_Linux-64bit.tar.gz
+
+# 安装 b2
+pip install b2
+
+
 # 安装 Miniconda
 mkdir -p ~/miniconda3
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
@@ -55,7 +65,7 @@ proxy_off && bash scripts/download_openfold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
 bash scripts/run_unit_tests.sh
 
-proxy_off && bash scripts/download_alphafold_dbs.sh openfold/resources reduced_dbs
+proxy_off && bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
 bash examples/monomer/inference.sh
 
 

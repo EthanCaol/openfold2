@@ -1,5 +1,4 @@
 #!/bin/bash
-#
 # Copyright 2021 AlQuraishi Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,5 +32,5 @@ DOWNLOAD_DIR="$1"
 ROOT_DIR="${DOWNLOAD_DIR}"
 SOURCE_URL="http://wwwuser.gwdg.de/~compbiol/colabfold/colabfold_envdb_202108.tar.gz"
 
-mkdir --parents "${ROOT_DIR}"
+mkdir -p "${ROOT_DIR}"
 aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}" -x 4 --check-certificate=false
