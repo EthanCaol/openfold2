@@ -1,43 +1,24 @@
 #!/bin/bash
-# Copyright 2021 AlQuraishi Laboratory
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Downloads and unzips the BFD database for AlphaFold.
-#
-# Usage: bash download_bfd.sh /path/to/download/directory
 set -e
-
-if [[ $# -eq 0 ]]; then
-    echo "Error: download directory must be provided as an input argument."
-    exit 1
-fi
-
-if ! command -v aria2c &> /dev/null ; then
-    echo "Error: aria2c could not be found. Please install aria2c (sudo apt install aria2)."
-    exit 1
-fi
 
 DOWNLOAD_DIR="$1"
 ROOT_DIR="${DOWNLOAD_DIR}/uniref30"
-# Mirror of:
-# https://wwwuser.gwdg.de/~compbiol/uniclust/2021_03/UniRef30_2021_03.tar.gz
 SOURCE_URL="https://storage.googleapis.com/alphafold-databases/v2.3/UniRef30_2021_03.tar.gz"
 BASENAME=$(basename "${SOURCE_URL}")
-
 mkdir -p "${ROOT_DIR}"
-aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}" -x 4 --check-certificate=false
-tar --extract --verbose --file="${ROOT_DIR}/${BASENAME}" \
-  --directory="${ROOT_DIR}"
-rm "${ROOT_DIR}/${BASENAME}"
 
+if [ -f "${ROOT_DIR}/UniRef30_2021_03_a3m.ffdata" ]; then
+    echo "| Uniref30 数据库已存在"
+    exit 0
+fi
+
+if [ -f "${ROOT_DIR}/${BASENAME}" ] && [ ! -f "${ROOT_DIR}/${BASENAME}.aria2" ]; then
+    echo "| Uniref30 数据库压缩包已存在"
+    exit 0
+else
+    aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
+fi
+
+echo "| 开始解压 Uniref30 数据库"
+pv -pterb "${ROOT_DIR}/${BASENAME}" | tar -x --directory="${ROOT_DIR}"
+rm -f "${ROOT_DIR}/${BASENAME}"

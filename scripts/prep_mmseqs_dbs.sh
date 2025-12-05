@@ -24,7 +24,7 @@ mkdir -p $ROOT_DIR
 
 for f in $(ls ${DOWNLOAD_DIR}/*.tar*)
 do
-  tar --extract --verbose --file="${f}" \
+  tar -x --verbose --file="${f}" \
       --directory=$ROOT_DIR
   rm "${f}"
   BASENAME="$(basename ${f%%.*})"

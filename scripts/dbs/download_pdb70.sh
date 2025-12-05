@@ -15,7 +15,7 @@ if [ -f "${ROOT_DIR}/pdb70_hhm.ffdata" ]; then
 fi
 
 if [ -f "${ROOT_DIR}/${BASENAME}" ] && [ ! -f "${ROOT_DIR}/${BASENAME}.aria2" ]; then
-    echo "| PDB70 数据库压缩包已下载完成"
+    echo "| PDB70 数据库压缩包已存在"
 else
     aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 \
         "${SOURCE_URL}" --dir="${ROOT_DIR}"

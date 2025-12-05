@@ -1,19 +1,5 @@
 #!/bin/bash
-# Downloads, unzips and merges the SwissProt and TrEMBL databases for
-# AlphaFold-Multimer.
-#
-# Usage: bash download_uniprot.sh /path/to/download/directory
 set -e
-
-if [[ $# -eq 0 ]]; then
-    echo "Error: download directory must be provided as an input argument."
-    exit 1
-fi
-
-if ! command -v aria2c &> /dev/null ; then
-    echo "Error: aria2c could not be found. Please install aria2c (sudo apt install aria2)."
-    exit 1
-fi
 
 DOWNLOAD_DIR="$1"
 ROOT_DIR="${DOWNLOAD_DIR}/uniprot"
@@ -25,16 +11,38 @@ TREMBL_UNZIPPED_BASENAME="${TREMBL_BASENAME%.gz}"
 SPROT_SOURCE_URL="ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
 SPROT_BASENAME=$(basename "${SPROT_SOURCE_URL}")
 SPROT_UNZIPPED_BASENAME="${SPROT_BASENAME%.gz}"
-
 mkdir -p "${ROOT_DIR}"
-aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${TREMBL_SOURCE_URL}" --dir="${ROOT_DIR}"
-aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SPROT_SOURCE_URL}" --dir="${ROOT_DIR}"
-pushd "${ROOT_DIR}"
-gunzip "${ROOT_DIR}/${TREMBL_BASENAME}"
-gunzip "${ROOT_DIR}/${SPROT_BASENAME}"
 
-# Concatenate TrEMBL and SwissProt, rename to uniprot and clean up.
-cat "${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}" >> "${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}"
+if [ -f "${ROOT_DIR}/uniprot.fasta" ]; then
+    echo "| Uniprot 数据库已存在"
+    exit 0
+fi
+
+if [ -f "${ROOT_DIR}/${TREMBL_BASENAME}" ] && [ ! -f "${ROOT_DIR}/${TREMBL_BASENAME}.aria2" ]; then
+    echo "| Uniprot TrEMBL 数据库压缩包已存在"
+elif [ -f "${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}" ]; then
+    echo "| Uniprot TrEMBL 数据库已解压"
+else
+    aria2c --allow-overwrite=false --auto-file-renaming=false -x 12 -s 12 "${TREMBL_SOURCE_URL}" --dir="${ROOT_DIR}"
+fi
+
+if [ -f "${ROOT_DIR}/${SPROT_BASENAME}" ] && [ ! -f "${ROOT_DIR}/${SPROT_BASENAME}.aria2" ]; then
+    echo "| Uniprot SwissProt 数据库压缩包已存在"
+elif [ -f "${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}" ]; then
+    echo "| Uniprot SwissProt 数据库已解压"
+else
+    aria2c --allow-overwrite=false --auto-file-renaming=false -x 12 -s 12 "${SPROT_SOURCE_URL}" --dir="${ROOT_DIR}"
+fi
+
+echo "| 开始解压 Uniprot TrEMBL 数据库"
+pv -pterb "${ROOT_DIR}/${TREMBL_BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}"
+rm -f "${ROOT_DIR}/${TREMBL_BASENAME}"
+
+echo "| 开始解压 Uniprot SwissProt 数据库"
+pv -pterb "${ROOT_DIR}/${SPROT_BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}"
+rm -f "${ROOT_DIR}/${SPROT_BASENAME}"
+
+# 连接 TrEMBL 和 SwissProt, 重命名为 uniprot 并清理
+cat "${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}" >>"${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}"
 mv "${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}" "${ROOT_DIR}/uniprot.fasta"
-rm "${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}"
-popd
+rm -f "${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}"

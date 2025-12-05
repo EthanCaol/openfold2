@@ -47,6 +47,6 @@ if [[ $FILENAME != $DOWNLOAD_FILENAME ]]; then
     exit
 fi
 
-tar --extract --verbose --file="${DOWNLOAD_PATH}" \
+tar -x --verbose --file="${DOWNLOAD_PATH}" \
   --directory="${DOWNLOAD_DIR}" --preserve-permissions
 rm "${DOWNLOAD_PATH}"

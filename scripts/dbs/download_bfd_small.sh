@@ -13,7 +13,7 @@ if [ -f "${ROOT_DIR}/${BASENAME%.gz}" ]; then
 fi
 
 if [ -f "${ROOT_DIR}/${BASENAME}" ] && [ ! -f "${ROOT_DIR}/${BASENAME}.aria2" ]; then
-    echo "| Small BFD 数据库压缩包已下载完成"
+    echo "| Small BFD 数据库压缩包已存在"
 else
     aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 \
         "${SOURCE_URL}" --dir="${ROOT_DIR}"
@@ -26,5 +26,5 @@ cleanup() {
     exit 1
 }
 trap cleanup INT TERM
-pv "${ROOT_DIR}/${BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${BASENAME%.gz}"
+pv -pterb "${ROOT_DIR}/${BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${BASENAME%.gz}"
 rm -f "${ROOT_DIR}/${BASENAME}"

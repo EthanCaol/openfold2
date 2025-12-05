@@ -29,9 +29,6 @@ mkdir s5cmd_temp && tar -xvf s5cmd_2.3.0_Linux-64bit.tar.gz -C s5cmd_temp
 sudo mv s5cmd_temp/s5cmd /usr/local/bin/s5cmd
 rm -rf s5cmd_temp s5cmd_2.3.0_Linux-64bit.tar.gz
 
-# 安装 b2
-pip install b2
-
 
 # 安装 Miniconda
 mkdir -p ~/miniconda3
