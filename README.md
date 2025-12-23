@@ -12,7 +12,7 @@ sudo dpkg -i cuda-keyring_1.1-1_all.deb && rm -rf cuda-keyring_1.1-1_all.deb
 sudo apt update && sudo apt -y install cuda-toolkit-12-8 # 匹配 PyTorch
 
 # 安装 Bazel
-sudo apt install apt-transport-https curl gnupg -y
+sudo apt install -y apt-transport-https
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
 sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
@@ -41,6 +41,10 @@ export TORCH_CUDA_ARCH_LIST="8.9" # 4070TS
 mamba install -y -f environment.yml
 pip install -r requirements.txt
 
+# 编译 attn_core_inplace_cuda
+python setup.py build_ext --inplace
+mv *.so "$(python -c "import site; print(site.getsitepackages()[0])")/"
+
 # 将当前目录安装作为 openfold 包
 echo "$PWD" > "$(python -c "import site; print(site.getsitepackages()[0])")/openfold.pth"
 
@@ -54,7 +58,7 @@ proxy_off && bash scripts/download_alphafold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
 
-# 跑测试
+# 跑测试 (重启vscode后运行)
 python3 -m unittest "$@"
 
 # 下载数据库

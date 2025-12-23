@@ -1,11 +1,6 @@
 import os
-from setuptools import setup, Extension, find_packages
-import subprocess
-
-import torch
+from setuptools import setup, find_packages
 from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension, CUDA_HOME
-
-from scripts.utils import get_nvidia_cc
 
 
 version_dependent_macros = [
@@ -23,41 +18,14 @@ extra_cuda_flags = [
     '--expt-extended-lambda',
 ]
 
-def get_cuda_bare_metal_version(cuda_dir):
-    if cuda_dir==None or torch.version.cuda==None:
-        assert False, "CUDA is not found"
-    else:
-        raw_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True)
-        output = raw_output.split()
-        release_idx = output.index("release") + 1
-        release = output[release_idx].split(".")
-        bare_metal_major = release[0]
-        bare_metal_minor = release[1][0]
-        
-        return raw_output, bare_metal_major, bare_metal_minor
 
-compute_capabilities = set([
-])
+torch_cuda_arch_list = os.getenv('TORCH_CUDA_ARCH_LIST', default=None)
+assert torch_cuda_arch_list is not None, "请设置环境变量 TORCH_CUDA_ARCH_LIST 来指定编译的CUDA计算能力, 例如 '8.0;8.9'"
 
-_, bare_metal_major, _ = get_cuda_bare_metal_version(CUDA_HOME)
-if int(bare_metal_major) >= 11:
-    compute_capabilities.add((8, 0))
-    compute_capabilities.add((8, 6))
-    compute_capabilities.add((8, 9))
-
-if int(bare_metal_major) >= 12:
-    compute_capabilities.add((9, 0))
-
-if int(bare_metal_major) >= 13:
-    compute_capabilities.add((10, 0))
-    compute_capabilities.add((10, 3))
-    compute_capabilities.add((12, 0))
-else:
-    compute_capabilities.add((7, 0))
-
-compute_capability, _ = get_nvidia_cc()
-if compute_capability is not None:
-    compute_capabilities = set([compute_capability])
+compute_capabilities = set()
+for arch in torch_cuda_arch_list.split(';'):
+    major, minor = arch.strip().split('.')
+    compute_capabilities.add((int(major), int(minor)))
 
 cc_flag = []
 for major, minor in list(compute_capabilities):
@@ -66,50 +34,35 @@ for major, minor in list(compute_capabilities):
         f'arch=compute_{major}{minor},code=sm_{major}{minor}',
     ])
 
+print(f"当前cc_flag: {cc_flag}")
 extra_cuda_flags += cc_flag
 
-if bare_metal_major != -1:
-    modules = [CUDAExtension(
-        name="attn_core_inplace_cuda",
-        sources=[
-            "openfold/utils/kernel/csrc/softmax_cuda.cpp",
-            "openfold/utils/kernel/csrc/softmax_cuda_kernel.cu",
-        ],
-        include_dirs=[
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                'openfold/utils/kernel/csrc/'
-            )
-        ],
-        extra_compile_args={
-            'cxx': ['-O3'] + version_dependent_macros,
-            'nvcc': (
-                ['-O3', '--use_fast_math'] +
-                version_dependent_macros +
-                extra_cuda_flags
-            ),
-        }
-    )]
-else:
-    modules = [CppExtension(
-        name="attn_core_inplace_cuda",
-        sources=[
-            "openfold/utils/kernel/csrc/softmax_cuda.cpp",
-            "openfold/utils/kernel/csrc/softmax_cuda_stub.cpp",
-        ],
-        extra_compile_args={
-            'cxx': ['-O3'],
-        }
-    )]
+modules = [CUDAExtension(
+    name="attn_core_inplace_cuda",
+    sources=[
+        "openfold/utils/kernel/csrc/softmax_cuda.cpp",
+        "openfold/utils/kernel/csrc/softmax_cuda_kernel.cu",
+    ],
+    include_dirs=[
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'openfold/utils/kernel/csrc/'
+        )
+    ],
+    extra_compile_args={
+        'cxx': ['-O3'] + version_dependent_macros,
+        'nvcc': (
+            ['-O3', '--use_fast_math'] +
+            version_dependent_macros +
+            extra_cuda_flags
+        ),
+    }
+)]
+
 
 setup(
     name='openfold',
     version='2.2.0',
-    description='A PyTorch reimplementation of DeepMind\'s AlphaFold 2',
-    author='OpenFold Team',
-    author_email='jennifer.wei@omsf.io',
-    license='Apache License, Version 2.0',
-    url='https://github.com/aqlaboratory/openfold',
     packages=find_packages(exclude=["tests", "scripts"]),
     include_package_data=True,
     package_data={
@@ -118,16 +71,4 @@ setup(
     },
     ext_modules=modules,
     cmdclass={'build_ext': BuildExtension},
-    extras_require={
-        'cuequivariance': [
-            'cuequivariance-torch; sys_platform != "darwin"',  # Not available on macOS
-            'triton>=3.3.0; sys_platform != "darwin"',  # Required for triangle multiplicative update
-        ],
-    },
-    classifiers=[
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3.10,'
-        'Topic :: Scientific/Engineering :: Artificial Intelligence',
-    ],
 )
