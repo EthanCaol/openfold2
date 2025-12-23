@@ -30,20 +30,6 @@ sudo mv s5cmd_temp/s5cmd /usr/local/bin/s5cmd
 rm -rf s5cmd_temp s5cmd_2.3.0_Linux-64bit.tar.gz
 
 
-# 安装 Miniconda
-mkdir -p ~/miniconda3
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-rm -rf ~/miniconda3/miniconda.sh
-~/miniconda3/bin/conda init bash
-eval "$(/home/ethan/miniconda3/bin/conda shell.bash hook)"
-conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
-conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-conda config --add channels conda-forge
-conda install -y mamba ncurses -c conda-forge
-mamba shell init --shell bash --root-prefix=~/.local/share/mamba
-
-
 # 配置环境变量
 vi ~/.bashrc
 export MAX_JOBS=12
@@ -55,14 +41,22 @@ export TORCH_CUDA_ARCH_LIST="8.9" # 4070TS
 mamba install -y -f environment.yml
 pip install -r requirements.txt
 
+# 将当前目录安装作为 openfold 包
+echo "$PWD" > "$(python -c "import site; print(site.getsitepackages()[0])")/openfold.pth"
+
+# deepspeed不想让torch的TORCH_CUDA_ARCH_LIST生效, 但是torch会警告
+sed -i 's/os\.environ\["TORCH_CUDA_ARCH_LIST"\] = ""/# &/' \
+    "${CONDA_PREFIX}/lib/python3.13/site-packages/deepspeed/ops/op_builder/builder.py"
+
 # 下载第三方依赖和模型参数 (别挂代理)
 proxy_on && bash scripts/install_third_party_dependencies.sh
 proxy_off && bash scripts/download_alphafold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
-bash scripts/run_unit_tests.sh
 
+# 跑测试
+python3 -m unittest "$@"
+
+# 下载数据库
 proxy_off && bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
 bash examples/monomer/inference.sh
-
-
