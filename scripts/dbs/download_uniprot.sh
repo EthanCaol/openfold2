@@ -4,11 +4,11 @@ set -e
 DOWNLOAD_DIR="$1"
 ROOT_DIR="${DOWNLOAD_DIR}/uniprot"
 
-TREMBL_SOURCE_URL="ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_trembl.fasta.gz"
+TREMBL_SOURCE_URL="https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_trembl.fasta.gz"
 TREMBL_BASENAME=$(basename "${TREMBL_SOURCE_URL}")
 TREMBL_UNZIPPED_BASENAME="${TREMBL_BASENAME%.gz}"
 
-SPROT_SOURCE_URL="ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
+SPROT_SOURCE_URL="https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
 SPROT_BASENAME=$(basename "${SPROT_SOURCE_URL}")
 SPROT_UNZIPPED_BASENAME="${SPROT_BASENAME%.gz}"
 mkdir -p "${ROOT_DIR}"
@@ -35,11 +35,11 @@ else
 fi
 
 echo "| 开始解压 Uniprot TrEMBL 数据库"
-pv -pterb "${ROOT_DIR}/${TREMBL_BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}"
+pv "${ROOT_DIR}/${TREMBL_BASENAME}" | pigz -d -p 24 >"${ROOT_DIR}/${TREMBL_UNZIPPED_BASENAME}"
 rm -f "${ROOT_DIR}/${TREMBL_BASENAME}"
 
 echo "| 开始解压 Uniprot SwissProt 数据库"
-pv -pterb "${ROOT_DIR}/${SPROT_BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}"
+pv "${ROOT_DIR}/${SPROT_BASENAME}" | pigz -d -p 24 >"${ROOT_DIR}/${SPROT_UNZIPPED_BASENAME}"
 rm -f "${ROOT_DIR}/${SPROT_BASENAME}"
 
 # 连接 TrEMBL 和 SwissProt, 重命名为 uniprot 并清理

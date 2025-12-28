@@ -23,11 +23,11 @@ else
                 >"${ROOT_DIR}/commands.txt"
     fi
 
-    TOTAL=$(wc -l <"${ROOT_DIR}/commands.txt") # 总文件数
+    TOTAL=$(wc -l <"${ROOT_DIR}/commands.txt")              # 总文件数
     DONE=$(find "${ROOT_DIR}" -type f -name "*.gz" | wc -l) # 已下载文件数
-    
+
     if [ "$DONE" -eq "$TOTAL" ]; then
-        echo "| 所有 mmCIF 压缩包已下载完成"
+        echo "| mmCIF 压缩包已下载完成"
     else
         echo "| 开始后台下载所有 mmCIF 压缩包"
         LOGFILE="${ROOT_DIR}/s5cmd.log"
@@ -42,7 +42,6 @@ else
             exit 1
         }
         trap cleanup INT TERM
-
 
         PREV_DONE=0
         while kill -0 $S5CMD_PID 2>/dev/null; do
@@ -67,24 +66,46 @@ else
         rm -f "$LOGFILE"
     fi
 
-
-
     echo "| 删除所有 mmCIF 已解压文件"
     find "${RAW_DIR}/" -type f -iname "*.cif" -delete
 
+    echo "| 开始监控 mmCIF 解压进度"
+    (
+        echo "子进程 PID: $BASHPID 开始监控..."
+        while true; do
+            count=$(find "${RAW_DIR}/" -type f -name "*.cif" 2>/dev/null | wc -l)
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] CIF 文件数: $count/$TOTAL"
+            sleep 5
+        done
+    ) &
+    child_pid=$!
+
+    cleanup() {
+        echo "| 清理监控进程"
+        if [[ -n "$child_pid" ]] && kill -0 "$child_pid" 2>/dev/null; then
+            kill "$child_pid" 2>/dev/null
+            wait "$child_pid" 2>/dev/null
+            echo "| 监控进程 $child_pid 已停止"
+        fi
+    }
+    trap cleanup EXIT INT TERM
+
     echo "| 解压所有 mmCIF 压缩包"
-    find "${RAW_DIR}/" -type f -iname "*.gz" -exec pigz -d -k -p 12 {} +
+    find "${RAW_DIR}/" -type f -iname "*.gz" -exec pigz -d -k -p 24 {} +
+    kill $child_pid 2>/dev/null || true
+
 
     echo "| 解压完成, 删除所有 mmCIF 压缩包"
     find "${RAW_DIR}/" -type f -iname "*.gz" -delete
 
-    echo "| 将所有 mmCIF 文件移动到同个目录中"
+    echo "| 将所有 mmCIF 文件移动到同个目录"
     mkdir -p "${MMCIF_DIR}"
     find "${RAW_DIR}" -type d -empty -delete
     for subdir in "${RAW_DIR}"/*; do
         mv "${subdir}/"*.cif "${MMCIF_DIR}"
     done
     find "${RAW_DIR}" -type d -empty -delete
+    rm -rf "${RAW_DIR}"
 fi
 
 if [ -f "${ROOT_DIR}/obsolete.dat" ]; then

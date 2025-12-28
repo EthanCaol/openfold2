@@ -14,11 +14,10 @@ fi
 
 if [ -f "${ROOT_DIR}/${BASENAME}" ] && [ ! -f "${ROOT_DIR}/${BASENAME}.aria2" ]; then
     echo "| Uniref30 数据库压缩包已存在"
-    exit 0
 else
     aria2c --allow-overwrite=false --auto-file-renaming=false -x 16 -s 16 "${SOURCE_URL}" --dir="${ROOT_DIR}"
 fi
 
 echo "| 开始解压 Uniref30 数据库"
-pv -pterb "${ROOT_DIR}/${BASENAME}" | tar -x --directory="${ROOT_DIR}"
+pv "${ROOT_DIR}/${BASENAME}" | tar -xzf - -C "${ROOT_DIR}"
 rm -f "${ROOT_DIR}/${BASENAME}"

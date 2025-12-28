@@ -26,5 +26,5 @@ cleanup() {
     exit 1
 }
 trap cleanup INT TERM
-pv -pterb "${ROOT_DIR}/${BASENAME}" | pigz -d -p 12 >"${ROOT_DIR}/${BASENAME%.gz}"
+pv "${ROOT_DIR}/${BASENAME}" | pigz -d -p 24 >"${ROOT_DIR}/${BASENAME%.gz}"
 rm -f "${ROOT_DIR}/${BASENAME}"

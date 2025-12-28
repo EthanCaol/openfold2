@@ -52,7 +52,7 @@ echo "$PWD" > "$(python -c "import site; print(site.getsitepackages()[0])")/open
 sed -i 's/os\.environ\["TORCH_CUDA_ARCH_LIST"\] = ""/# &/' \
     "${CONDA_PREFIX}/lib/python3.13/site-packages/deepspeed/ops/op_builder/builder.py"
 
-# 下载第三方依赖和模型参数 (别挂代理)
+# 下载第三方依赖和模型参数
 proxy_on && bash scripts/install_third_party_dependencies.sh
 proxy_off && bash scripts/download_alphafold_params.sh openfold/resources
 proxy_off && bash scripts/download_openfold_params.sh openfold/resources
@@ -62,6 +62,5 @@ proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
 python3 -m unittest "$@"
 
 # 下载数据库
-# proxy_on && bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
-proxy_off && bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
+bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
 bash examples/monomer/inference.sh
