@@ -1,26 +1,6 @@
 #!/bin/bash
 set -e
 
-proxy_addr=127.0.0.1
-proxy_port=7890
-function proxy_on() {
-    export http_proxy=http://$proxy_addr:$proxy_port
-    export https_proxy=http://$proxy_addr:$proxy_port
-    export no_proxy=$proxy_addr,localhost
-    export HTTP_PROXY=http://$proxy_addr:$proxy_port
-    export HTTPS_PROXY=http://$proxy_addr:$proxy_port
-    export NO_PROXY=$proxy_addr,localhost
-}
-function proxy_off(){
-    unset http_proxy
-    unset https_proxy
-    unset no_proxy
-    unset HTTP_PROXY
-    unset HTTPS_PROXY
-    unset NO_PROXY
-}
-proxy_off
-
 DOWNLOAD_DIR="$1"
 DOWNLOAD_MODE="${2:-full_dbs}" # 默认下载 full_dbs
 if [[ "${DOWNLOAD_MODE}" != full_dbs && "${DOWNLOAD_MODE}" != reduced_dbs ]]; then
@@ -60,9 +40,9 @@ echo "| 🛠️ 开始准备 Uniref90 数据库"
 bash "${SCRIPT_DIR}/download_uniref90.sh" "${DOWNLOAD_DIR}"
 echo -e "| ✨ Uniref90 数据库准备完成\n"
 
-# echo "| 🛠️ 开始准备 UniProt 数据库"
-# bash "${SCRIPT_DIR}/download_uniprot.sh" "${DOWNLOAD_DIR}"
-# echo -e "| ✨ UniProt 数据库准备完成\n"
+echo "| 🛠️ 开始准备 UniProt 数据库"
+bash "${SCRIPT_DIR}/download_uniprot.sh" "${DOWNLOAD_DIR}"
+echo -e "| ✨ UniProt 数据库准备完成\n"
 
 echo "| 🛠️ 开始准备 PDB SeqRes 数据库"
 bash "${SCRIPT_DIR}/download_pdb_seqres.sh" "${DOWNLOAD_DIR}"

@@ -62,5 +62,6 @@ proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
 python3 -m unittest "$@"
 
 # 下载数据库
+# proxy_on && bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
 proxy_off && bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
 bash examples/monomer/inference.sh

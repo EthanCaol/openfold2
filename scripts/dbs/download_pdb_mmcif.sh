@@ -19,53 +19,64 @@ else
         echo "| 生成下载地址 commands.txt (${SNAPSHOT_DATE}年度快照)"
         s5cmd --no-sign-request --json ls "s3://pdbsnapshots/${SNAPSHOT_DATE}/pub/pdb/data/structures/divided/mmCIF/*/*" |
             jq -r '.key' |
-            awk -v dir="${RAW_DIR}/" '{rel = substr($0, index($0,"mmCIF/")+6); print "cp -s "$0" "dir rel}' \
+            awk -v dir="${RAW_DIR}/" '{rel = substr($0, index($0,"mmCIF/")+6); print "cp -n "$0" "dir rel}' \
                 >"${ROOT_DIR}/commands.txt"
     fi
 
-    echo "| 开始后台下载所有 mmCIF 文件"
-    s5cmd --no-sign-request --numworkers 256 --retry-count 10 run "${ROOT_DIR}/commands.txt" >/dev/null 2>&1 &
-
-    S5CMD_PID=$!
-    echo "| 后台下载任务 PID: $S5CMD_PID"
-    cleanup() {
-        echo "| 检测到中断, 正在停止后台下载任务"
-        kill $S5CMD_PID 2>/dev/null
-        wait $S5CMD_PID 2>/dev/null
-        exit 1
-    }
-    trap cleanup INT TERM
-
-    LOGFILE="${ROOT_DIR}/s5cmd.log"
-    s5cmd --no-sign-request --numworkers 256 --retry-count 10 run "${ROOT_DIR}/commands.txt" >"$LOGFILE" 2>&1 &
-
-    S5CMD_PID=$!
-    PREV_DONE=0
     TOTAL=$(wc -l <"${ROOT_DIR}/commands.txt") # 总文件数
+    DONE=$(find "${ROOT_DIR}" -type f -name "*.gz" | wc -l) # 已下载文件数
+    
+    if [ "$DONE" -eq "$TOTAL" ]; then
+        echo "| 所有 mmCIF 压缩包已下载完成"
+    else
+        echo "| 开始后台下载所有 mmCIF 压缩包"
+        LOGFILE="${ROOT_DIR}/s5cmd.log"
+        s5cmd --no-sign-request --numworkers 256 --retry-count 10 run "${ROOT_DIR}/commands.txt" >"$LOGFILE" 2>&1 &
 
-    while kill -0 $S5CMD_PID 2>/dev/null; do
-        sleep 5
-        DONE=$(wc -l <"$LOGFILE")
-        RATE=$(((DONE - PREV_DONE) / 5))
+        S5CMD_PID=$!
+        echo "| 后台下载任务 PID: $S5CMD_PID"
+        cleanup() {
+            echo "| 检测到中断, 正在停止后台下载任务"
+            kill "$S5CMD_PID" 2>/dev/null
+            wait "$S5CMD_PID" 2>/dev/null
+            exit 1
+        }
+        trap cleanup INT TERM
 
-        if [ $RATE -gt 0 ]; then
-            REMAIN_SEC=$(((TOTAL - DONE) / RATE))
-            REMAIN_MIN=$((REMAIN_SEC / 60))
-            REMAIN_SEC_MOD=$((REMAIN_SEC % 60))
-            REMAIN_STR="${REMAIN_MIN}m ${REMAIN_SEC_MOD}s"
-        else
-            REMAIN_STR="计算中"
-        fi
 
-        PCT=$(awk -v d="$DONE" -v t="$TOTAL" 'BEGIN{printf "%.2f", (d/t)*100}')
-        echo "[$(date '+%H:%M:%S')] $DONE/$TOTAL ($PCT%), 还需用时: ${REMAIN_STR}"
-        PREV_DONE=$DONE
-    done
+        PREV_DONE=0
+        while kill -0 $S5CMD_PID 2>/dev/null; do
+            sleep 5
+            DONE=$(wc -l <"$LOGFILE")
+            RATE=$(((DONE - PREV_DONE) / 5))
 
-    rm -f "$LOGFILE"
+            if [ $RATE -gt 0 ]; then
+                REMAIN_SEC=$(((TOTAL - DONE) / RATE))
+                REMAIN_MIN=$((REMAIN_SEC / 60))
+                REMAIN_SEC_MOD=$((REMAIN_SEC % 60))
+                REMAIN_STR="${REMAIN_MIN}m ${REMAIN_SEC_MOD}s"
+            else
+                REMAIN_STR="计算中"
+            fi
 
-    echo "| 解压所有 mmCIF 文件"
-    find "${RAW_DIR}/" -type f -iname "*.gz" -exec pigz -d -p 12 {} +
+            PCT=$(awk -v d="$DONE" -v t="$TOTAL" 'BEGIN{printf "%.2f", (d/t)*100}')
+            echo "[$(date '+%H:%M:%S')] $DONE/$TOTAL ($PCT%), 还需用时: ${REMAIN_STR}"
+            PREV_DONE=$DONE
+        done
+
+        rm -f "$LOGFILE"
+    fi
+
+
+
+    echo "| 删除所有 mmCIF 已解压文件"
+    find "${RAW_DIR}/" -type f -iname "*.cif" -delete
+
+    echo "| 解压所有 mmCIF 压缩包"
+    find "${RAW_DIR}/" -type f -iname "*.gz" -exec pigz -d -k -p 12 {} +
+
+    echo "| 解压完成, 删除所有 mmCIF 压缩包"
+    find "${RAW_DIR}/" -type f -iname "*.gz" -delete
 
     echo "| 将所有 mmCIF 文件移动到同个目录中"
     mkdir -p "${MMCIF_DIR}"
