@@ -1,11 +1,13 @@
 #!/bin/bash
+set -e
+
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 export LIBRARY_PATH=$CONDA_PREFIX/lib:$LIBRARY_PATH
 
-export FASTA_DIR=./fasta_dir
-export OUTPUT_DIR=./
-export PRECOMPUTED_ALIGNMENT_DIR=./alignments
-export MMCIF_DIR=/mmcifs    # UPDATE with path to your mmcifs directory 
+export FASTA_DIR=./examples/monomer/fasta_dir
+export OUTPUT_DIR=./examples/monomer/output
+export PRECOMPUTED_ALIGNMENT_DIR=./examples/monomer/alignments
+export MMCIF_DIR=./openfold/resources/pdb_mmcif/mmcif_files # UPDATE with path to your mmcifs directory
 
 python3 run_pretrained_openfold.py $FASTA_DIR \
   $MMCIF_DIR \
@@ -13,4 +15,4 @@ python3 run_pretrained_openfold.py $FASTA_DIR \
   --config_preset model_1_ptm \
   --model_device "cuda:0" \
   --data_random_seed 42 \
-  --use_precomputed_alignments $PRECOMPUTED_ALIGNMENT_DIR 
+  --use_precomputed_alignments $PRECOMPUTED_ALIGNMENT_DIR

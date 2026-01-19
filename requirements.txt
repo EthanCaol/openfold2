@@ -15,6 +15,9 @@ modelcif
 dm-tree
 deepspeed
 
+cuda-python==12.8
+tensorrt-cu12
+
 # 根据 PyTorch 和 CUDA 版本, 安装对应的 FlashAttention 版本
 # https://github.com/Dao-AILab/flash-attention/releases
 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp313-cp313-linux_x86_64.whl

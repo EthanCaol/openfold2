@@ -64,3 +64,6 @@ python3 -m unittest "$@"
 # 下载数据库
 bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
 bash examples/monomer/inference.sh
+
+
+python3 run_pretrained_openfold.py
