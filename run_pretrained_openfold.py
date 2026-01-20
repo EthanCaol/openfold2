@@ -1,57 +1,34 @@
-# Copyright 2021 AlQuraishi Laboratory
-# Copyright 2021 DeepMind Technologies Limited
-# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import argparse
-import logging
-import math
-import numpy as np
 import os
-import pickle
-import random
+import math
 import time
-import torch
 import json
+import torch
+import random
+import pickle
+import logging
+import argparse
+import numpy as np
 
-logging.basicConfig()
+logging.basicConfig(format="  🔧 %(asctime)s %(levelname)s - %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__file__)
 logger.setLevel(level=logging.INFO)
 
-torch_versions = torch.__version__.split(".")
-torch_major_version = int(torch_versions[0])
-torch_minor_version = int(torch_versions[1])
-if (
-    torch_major_version > 1 or
-    (torch_major_version == 1 and torch_minor_version >= 12)
-):
-    # Gives a large speedup on Ampere-class GPUs
-    torch.set_float32_matmul_precision("high")
-
+torch.set_float32_matmul_precision("high")  # TF32加速
 torch.set_grad_enabled(False)
 
 from openfold.config import model_config
 from openfold.data import templates, feature_pipeline, data_pipeline
 from openfold.data.tools import hhsearch, hmmsearch
 from openfold.np import protein
-from openfold.utils.script_utils import (load_models_from_command_line, parse_fasta, run_model,
-                                         prep_output, relax_protein)
-from openfold.utils.tensor_utils import tensor_tree_map
-from openfold.utils.trace_utils import (
-    pad_feature_dict_seq,
-    trace_model_,
+from openfold.utils.script_utils import (
+    load_models_from_command_line,
+    parse_fasta,
+    run_model,
+    prep_output,
+    relax_protein,
 )
+from openfold.utils.tensor_utils import tensor_tree_map
+from openfold.utils.trace_utils import pad_feature_dict_seq, trace_model_
 
 from scripts.precompute_embeddings import EmbeddingGenerator
 from scripts.utils import add_data_args
@@ -111,12 +88,11 @@ def precompute_alignments(tags, seqs, alignment_dir, args):
                 )
 
             alignment_runner.run(
-                tmp_fasta_path, local_alignment_dir,
+                tmp_fasta_path,
+                local_alignment_dir,
             )
         else:
-            logger.info(
-                f"Using precomputed alignments for {tag} at {alignment_dir}..."
-            )
+            logger.info(f"Using precomputed alignments for {tag} at {alignment_dir}...")
 
         # Remove temporary FASTA file
         os.remove(tmp_fasta_path)
@@ -137,11 +113,10 @@ def generate_feature_dict(
 
     if "multimer" in args.config_preset:
         with open(tmp_fasta_path, "w") as fp:
-            fp.write(
-                '\n'.join([f">{tag}\n{seq}" for tag, seq in zip(tags, seqs)])
-            )
+            fp.write("\n".join([f">{tag}\n{seq}" for tag, seq in zip(tags, seqs)]))
         feature_dict = data_processor.process_fasta(
-            fasta_path=tmp_fasta_path, alignment_dir=alignment_dir,
+            fasta_path=tmp_fasta_path,
+            alignment_dir=alignment_dir,
         )
     elif len(seqs) == 1:
         tag = tags[0]
@@ -157,11 +132,10 @@ def generate_feature_dict(
         )
     else:
         with open(tmp_fasta_path, "w") as fp:
-            fp.write(
-                '\n'.join([f">{tag}\n{seq}" for tag, seq in zip(tags, seqs)])
-            )
+            fp.write("\n".join([f">{tag}\n{seq}" for tag, seq in zip(tags, seqs)]))
         feature_dict = data_processor.process_multiseq_fasta(
-            fasta_path=tmp_fasta_path, super_alignment_dir=alignment_dir,
+            fasta_path=tmp_fasta_path,
+            super_alignment_dir=alignment_dir,
         )
 
     # Remove temporary FASTA file
@@ -175,14 +149,14 @@ def list_files_with_extensions(dir, extensions):
 
 
 def main(args):
-    # Create the output directory
+    # 创建输出目录
     os.makedirs(args.output_dir, exist_ok=True)
 
     if args.config_preset.startswith("seq"):
         args.use_single_seq_mode = True
 
     config = model_config(
-        args.config_preset, 
+        args.config_preset,
         long_sequence_inference=args.long_sequence_inference,
         use_deepspeed_evoformer_attention=args.use_deepspeed_evoformer_attention,
         use_cuequivariance_attention=args.use_cuequivariance_attention,
@@ -196,25 +170,23 @@ def main(args):
     )
 
     if args.experiment_config_json:
-        with open(args.experiment_config_json, 'r') as f:
+        with open(args.experiment_config_json, "r") as f:
             custom_config_dict = json.load(f)
         config.update_from_flattened_dict(custom_config_dict)
-    
+
     if args.trace_model:
         if not config.data.predict.fixed_size:
-            raise ValueError(
-                "Tracing requires that fixed_size mode be enabled in the config"
-            )
+            raise ValueError("Tracing requires that fixed_size mode be enabled in the config")
 
     is_multimer = "multimer" in args.config_preset
     is_custom_template = "use_custom_template" in args and args.use_custom_template
     if is_custom_template:
         template_featurizer = templates.CustomHitFeaturizer(
             mmcif_dir=args.template_mmcif_dir,
-            max_template_date="9999-12-31", # just dummy, not used
-            max_hits=-1, # just dummy, not used
-            kalign_binary_path=args.kalign_binary_path
-            )
+            max_template_date="9999-12-31",  # just dummy, not used
+            max_hits=-1,  # just dummy, not used
+            kalign_binary_path=args.kalign_binary_path,
+        )
     elif is_multimer:
         template_featurizer = templates.HmmsearchHitFeaturizer(
             mmcif_dir=args.template_mmcif_dir,
@@ -222,7 +194,7 @@ def main(args):
             max_hits=config.data.predict.max_templates,
             kalign_binary_path=args.kalign_binary_path,
             release_dates_path=args.release_dates_path,
-            obsolete_pdbs_path=args.obsolete_pdbs_path
+            obsolete_pdbs_path=args.obsolete_pdbs_path,
         )
     else:
         template_featurizer = templates.HhsearchHitFeaturizer(
@@ -231,7 +203,7 @@ def main(args):
             max_hits=config.data.predict.max_templates,
             kalign_binary_path=args.kalign_binary_path,
             release_dates_path=args.release_dates_path,
-            obsolete_pdbs_path=args.obsolete_pdbs_path
+            obsolete_pdbs_path=args.obsolete_pdbs_path,
         )
     data_processor = data_pipeline.DataPipeline(
         template_featurizer=template_featurizer,
@@ -244,7 +216,7 @@ def main(args):
     output_dir_base = args.output_dir
     random_seed = args.data_random_seed
     if random_seed is None:
-        random_seed = random.randrange(2 ** 32)
+        random_seed = random.randrange(2**32)
 
     np.random.seed(random_seed)
     torch.manual_seed(random_seed + 1)
@@ -267,14 +239,11 @@ def main(args):
         tags, seqs = parse_fasta(data)
 
         if not is_multimer and len(tags) != 1:
-            print(
-                f"{fasta_path} contains more than one sequence but "
-                f"multimer mode is not enabled. Skipping..."
-            )
+            print(f"{fasta_path} contains more than one sequence but " f"multimer mode is not enabled. Skipping...")
             continue
 
         # assert len(tags) == len(set(tags)), "All FASTA tags must be unique"
-        tag = '-'.join(tags)
+        tag = "-".join(tags)
 
         tag_list.append((tag, tags))
         seq_list.append(seqs)
@@ -284,22 +253,22 @@ def main(args):
     feature_dicts = {}
 
     if is_multimer and args.openfold_checkpoint_path:
-        raise ValueError(
-            '`openfold_checkpoint_path` was specified, but no OpenFold checkpoints are available for multimer mode')
+        raise ValueError("`openfold_checkpoint_path` was specified, but no OpenFold checkpoints are available for multimer mode")
 
     model_generator = load_models_from_command_line(
         config,
         args.model_device,
         args.openfold_checkpoint_path,
         args.jax_param_path,
-        args.output_dir)
+        args.output_dir,
+    )
 
     for model, output_directory in model_generator:
         cur_tracing_interval = 0
         for (tag, tags), seqs in sorted_targets:
-            output_name = f'{tag}_{args.config_preset}'
+            output_name = f"{tag}_{args.config_preset}"
             if args.output_postfix is not None:
-                output_name = f'{output_name}_{args.output_postfix}'
+                output_name = f"{output_name}_{args.output_postfix}"
 
             # Does nothing if the alignments have already been computed
             precompute_alignments(tags, seqs, alignment_dir, args)
@@ -318,40 +287,34 @@ def main(args):
                     n = feature_dict["aatype"].shape[-2]
                     rounded_seqlen = round_up_seqlen(n)
                     feature_dict = pad_feature_dict_seq(
-                        feature_dict, rounded_seqlen,
+                        feature_dict,
+                        rounded_seqlen,
                     )
 
                 feature_dicts[tag] = feature_dict
-            processed_feature_dict = feature_processor.process_features(
-                feature_dict, mode='predict', is_multimer=is_multimer
-            )
+            processed_feature_dict = feature_processor.process_features(feature_dict, mode="predict", is_multimer=is_multimer)
 
-            processed_feature_dict = {
-                k: torch.as_tensor(v, device=args.model_device)
-                for k, v in processed_feature_dict.items()
-            }
+            processed_feature_dict = {k: torch.as_tensor(v, device=args.model_device) for k, v in processed_feature_dict.items()}
 
             if args.trace_model:
                 if rounded_seqlen > cur_tracing_interval:
-                    logger.info(
-                        f"Tracing model at {rounded_seqlen} residues..."
-                    )
+                    logger.info(f"Tracing model at {rounded_seqlen} residues...")
                     t = time.perf_counter()
                     trace_model_(model, processed_feature_dict)
                     tracing_time = time.perf_counter() - t
-                    logger.info(
-                        f"Tracing time: {tracing_time}"
-                    )
+                    logger.info(f"Tracing time: {tracing_time}")
                     cur_tracing_interval = rounded_seqlen
 
-            out = run_model(model, processed_feature_dict, tag, args.output_dir)
+            out = run_model(
+                model,
+                processed_feature_dict,
+                tag,
+                args.output_dir,
+            )
 
             # Toss out the recycling dimensions --- we don't need them anymore
-            processed_feature_dict = tensor_tree_map(
-                lambda x: np.array(x[..., -1].cpu()),
-                processed_feature_dict
-            )
-            out = tensor_tree_map(lambda x: np.array(x.cpu()), out)
+            processed_feature_dict = tensor_tree_map(lambda x: x[..., -1].cpu().numpy(), processed_feature_dict)
+            out = tensor_tree_map(lambda x: x.cpu().numpy(), out)
 
             unrelaxed_protein = prep_output(
                 out,
@@ -360,17 +323,15 @@ def main(args):
                 feature_processor,
                 args.config_preset,
                 args.multimer_ri_gap,
-                args.subtract_plddt
+                args.subtract_plddt,
             )
 
             unrelaxed_file_suffix = "_unrelaxed.pdb"
             if args.cif_output:
                 unrelaxed_file_suffix = "_unrelaxed.cif"
-            unrelaxed_output_path = os.path.join(
-                output_directory, f'{output_name}{unrelaxed_file_suffix}'
-            )
+            unrelaxed_output_path = os.path.join(output_directory, f"{output_name}{unrelaxed_file_suffix}")
 
-            with open(unrelaxed_output_path, 'w') as fp:
+            with open(unrelaxed_output_path, "w") as fp:
                 if args.cif_output:
                     fp.write(protein.to_modelcif(unrelaxed_protein))
                 else:
@@ -381,13 +342,17 @@ def main(args):
             if not args.skip_relaxation:
                 # Relax the prediction.
                 logger.info(f"Running relaxation on {unrelaxed_output_path}...")
-                relax_protein(config, args.model_device, unrelaxed_protein, output_directory, output_name,
-                              args.cif_output)
+                relax_protein(
+                    config,
+                    args.model_device,
+                    unrelaxed_protein,
+                    output_directory,
+                    output_name,
+                    args.cif_output,
+                )
 
             if args.save_outputs:
-                output_dict_path = os.path.join(
-                    output_directory, f'{output_name}_output_dict.pkl'
-                )
+                output_dict_path = os.path.join(output_directory, f"{output_name}_output_dict.pkl")
                 with open(output_dict_path, "wb") as fp:
                     pickle.dump(out, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -397,145 +362,194 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "fasta_dir", type=str,
-        help="Path to directory containing FASTA files, one sequence per file"
+        "fasta_dir",
+        type=str,
+        help="推理序列的FASTA文件目录, 每个文件包含一个序列",
     )
     parser.add_argument(
-        "template_mmcif_dir", type=str,
+        "template_mmcif_dir",
+        type=str,
+        help="模板文件的mmCIF目录",
     )
     parser.add_argument(
-        "--use_precomputed_alignments", type=str, default=None,
-        help="""Path to alignment directory. If provided, alignment computation 
-                is skipped and database path arguments are ignored."""
+        "--use_precomputed_alignments",
+        type=str,
+        default=None,
+        help="对齐文件目录 (如果提供, 则跳过对齐计算, 并忽略数据库路径参数)",
     )
     parser.add_argument(
-        "--use_custom_template", action="store_true", default=False,
-        help="""Use mmcif given with "template_mmcif_dir" argument as template input."""
+        "--use_custom_template",
+        action="store_true",
+        default=False,
+        help="是否使用 template_mmcif_dir 参数提供的 mmcif 作为模板输入",
     )
     parser.add_argument(
-        "--use_single_seq_mode", action="store_true", default=False,
-        help="""Use single sequence embeddings instead of MSAs."""
+        "--use_single_seq_mode",
+        action="store_true",
+        default=False,
+        help="是否使用单序列嵌入而非MSA进行推理",
     )
     parser.add_argument(
-        "--output_dir", type=str, default=os.getcwd(),
-        help="""Name of the directory in which to output the prediction""",
+        "--output_dir",
+        type=str,
+        default=os.getcwd(),
+        help="预测结果输出目录",
     )
     parser.add_argument(
-        "--model_device", type=str, default="cpu",
-        help="""Name of the device on which to run the model. Any valid torch
-             device name is accepted (e.g. "cpu", "cuda:0")"""
+        "--model_device",
+        type=str,
+        default="cuda",
+        help="模型运行设备名称 (默认为'cuda')",
     )
     parser.add_argument(
-        "--config_preset", type=str, default="model_1",
-        help="""Name of a model config preset defined in openfold/config.py"""
+        "--config_preset",
+        type=str,
+        default="model_1",
+        help="模型配置预设名称, 定义在 openfold/config.py 中",
     )
     parser.add_argument(
-        "--jax_param_path", type=str, default=None,
-        help="""Path to JAX model parameters. If None, and openfold_checkpoint_path
-             is also None, parameters are selected automatically according to 
-             the model name from openfold/resources/params"""
+        "--jax_param_path",
+        type=str,
+        default=None,
+        help="JAX模型参数路径。如果为None，且openfold_checkpoint_path也为None，则根据模型名称自动从openfold/resources/params中选择参数",
     )
     parser.add_argument(
-        "--openfold_checkpoint_path", type=str, default=None,
-        help="""Path to OpenFold checkpoint. Can be either a DeepSpeed 
-             checkpoint directory or a .pt file"""
+        "--openfold_checkpoint_path",
+        type=str,
+        default=None,
+        help="OpenFold检查点路径。可以是DeepSpeed检查点目录或.pt文件",
     )
     parser.add_argument(
-        "--save_outputs", action="store_true", default=False,
-        help="Whether to save all model outputs, including embeddings, etc."
+        "--save_outputs",
+        action="store_true",
+        default=False,
+        help="是否保存所有模型输出，包括嵌入等",
     )
     parser.add_argument(
-        "--cpus", type=int, default=4,
-        help="""Number of CPUs with which to run alignment tools"""
+        "--cpus",
+        type=int,
+        default=4,
+        help="用于运行对齐工具的CPU数量",
     )
     parser.add_argument(
-        "--preset", type=str, default='full_dbs',
-        choices=('reduced_dbs', 'full_dbs')
+        "--preset",
+        type=str,
+        default="full_dbs",
+        choices=("reduced_dbs", "full_dbs"),
+        help="预设数据库选项，影响对齐搜索所用的数据库集",
     )
     parser.add_argument(
-        "--output_postfix", type=str, default=None,
-        help="""Postfix for output prediction filenames"""
+        "--output_postfix",
+        type=str,
+        default=None,
+        help="预测结果文件名的后缀",
     )
     parser.add_argument(
-        "--data_random_seed", type=int, default=None
+        "--data_random_seed",
+        type=int,
+        default=42,
+        help="用于数据处理的随机种子 (默认为42)",
     )
     parser.add_argument(
-        "--skip_relaxation", action="store_true", default=False,
+        "--skip_relaxation",
+        action="store_true",
+        default=False,
+        help="是否跳过结构放松步骤",
     )
     parser.add_argument(
-        "--multimer_ri_gap", type=int, default=200,
-        help="""Residue index offset between multiple sequences, if provided"""
+        "--multimer_ri_gap",
+        type=int,
+        default=200,
+        help="多序列之间的残基索引偏移量，如果提供的话",
     )
     parser.add_argument(
-        "--trace_model", action="store_true", default=False,
-        help="""Whether to convert parts of each model to TorchScript.
-                Significantly improves runtime at the cost of lengthy
-                'compilation.' Useful for large batch jobs."""
+        "--trace_model",
+        action="store_true",
+        default=False,
+        help="是否将模型的部分转换为TorchScript。显著提高运行速度，但会增加编译时间。适用于大批量任务。",
     )
     parser.add_argument(
-        "--subtract_plddt", action="store_true", default=False,
-        help=""""Whether to output (100 - pLDDT) in the B-factor column instead
-                 of the pLDDT itself"""
+        "--subtract_plddt",
+        action="store_true",
+        default=False,
+        help="是否在B因子列输出 (100 - pLDDT) 而非pLDDT本身",
     )
     parser.add_argument(
-        "--long_sequence_inference", action="store_true", default=False,
-        help="""enable options to reduce memory usage at the cost of speed, helps longer sequences fit into GPU memory, see the README for details"""
+        "--long_sequence_inference",
+        action="store_true",
+        default=False,
+        help="启用选项以减少内存使用，代价是速度，帮助更长的序列适应GPU内存，详情见README",
     )
     parser.add_argument(
-        "--cif_output", action="store_true", default=False,
-        help="Output predicted models in ModelCIF format instead of PDB format (default)"
+        "--cif_output",
+        action="store_true",
+        default=False,
+        help="是否以ModelCIF格式输出预测模型，而非默认的PDB格式",
     )
     parser.add_argument(
-        "--experiment_config_json", default="", help="Path to a json file with custom config values to overwrite config setting",
+        "--experiment_config_json",
+        default="",
+        help="用于覆盖配置设置的自定义配置值的json文件路径",
     )
     parser.add_argument(
-        "--use_deepspeed_evoformer_attention", action="store_true", default=False, 
-        help="Whether to use the DeepSpeed evoformer attention layer. Must have deepspeed installed in the environment.",
+        "--use_deepspeed_evoformer_attention",
+        action="store_true",
+        default=False,
+        help="是否使用DeepSpeed evoformer注意力层。环境中必须安装deepspeed。",
     )
     parser.add_argument(
-        "--use_cuequivariance_attention", action="store_true", default=False,
-        help="""Use cuEquivariance kernels for attention computation."""
+        "--use_cuequivariance_attention",
+        action="store_true",
+        default=False,
+        help="是否使用cuEquivariance内核进行注意力计算。",
     )
     parser.add_argument(
-        "--use_cuequivariance_multiplicative_update", action="store_true", default=False,
-        help="""Use cuEquivariance kernels for triangular multiplicative update computation."""
+        "--use_cuequivariance_multiplicative_update",
+        action="store_true",
+        default=False,
+        help="是否使用cuEquivariance内核进行三角乘法更新计算。",
     )
     parser.add_argument(
-        "--trt_mode", type=str, default=None,
-        help="build = Build engine; run = Run engine; None = Disable TRT"
+        "--trt_mode",
+        type=str,
+        default=None,
+        help="build = Build engine; run = Run engine; None = Disable TRT",
     )
     parser.add_argument(
-        "--trt_engine_dir", type=str, default=None,
-        help="Absolute path to directory containing .onnx and .plan files"
+        "--trt_engine_dir",
+        type=str,
+        default=None,
+        help="Absolute path to directory containing .onnx and .plan files",
     )
     parser.add_argument(
-        "--precision", type=str, default="tf32",
-        help="tf32 | fp32 | fp16 | bf16"
+        "--precision",
+        type=str,
+        default="tf32",
+        help="tf32 | fp32 | fp16 | bf16",
     )
     parser.add_argument(
-        "--trt_max_sequence_len", type=int, default=640,
-        help="Maximum sequence length supported by TRT, default=640"
+        "--trt_max_sequence_len",
+        type=int,
+        default=640,
+        help="Maximum sequence length supported by TRT, default=640",
     )
     parser.add_argument(
-        "--trt_num_profiles", type=int, default=1,
-        help="1 = Single profile[50-800]; 2 = [50-200][200-800]; 4 = [50-100]; [100-200]; [200-400]; [400-800]"
+        "--trt_num_profiles",
+        type=int,
+        default=1,
+        help="1 = Single profile[50-800]; 2 = [50-200][200-800]; 4 = [50-100]; [100-200]; [200-400]; [400-800]",
     )
     parser.add_argument(
-        "--trt_optimization_level", type=int, default=3,
-        help="Allowed values: 0 to 5"
+        "--trt_optimization_level",
+        type=int,
+        default=3,
+        help="Allowed values: 0 to 5",
     )
     add_data_args(parser)
     args = parser.parse_args()
 
+    # 根据配置预设选择默认参数路径
     if args.jax_param_path is None and args.openfold_checkpoint_path is None:
-        args.jax_param_path = os.path.join(
-            "openfold", "resources", "params",
-            "params_" + args.config_preset + ".npz"
-        )
+        args.jax_param_path = os.path.join("openfold", "resources", "params", "params_" + args.config_preset + ".npz")
 
-    if args.model_device == "cpu" and torch.cuda.is_available():
-        logging.warning(
-            """The model is being run on CPU. Consider specifying 
-            --model_device for better performance"""
-        )
     main(args)

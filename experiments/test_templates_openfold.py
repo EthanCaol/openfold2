@@ -283,8 +283,8 @@ def score_decoy(target_seq, decoy_prot, model_runner, name):
   working_batch = deepcopy(features)
   out, inference_time = run_model(model_runner, working_batch, name, args.output_dir)
   print(f"{name} done. Inference time: ", inference_time)
-  working_batch = tensor_tree_map(lambda x: np.array(x[..., -1].cpu()), working_batch)
-  out = tensor_tree_map(lambda x: np.array(x.cpu()), out)
+  working_batch = tensor_tree_map(lambda x: x[..., -1].cpu().numpy(), working_batch)
+  out = tensor_tree_map(lambda x: x.cpu().numpy(), out)
   result = parse_results(out, working_batch)
   return result, mismatch
 
@@ -447,8 +447,8 @@ for n in natives_list:
       working_batch = deepcopy(features)
       out, inference_time = run_model(runner, working_batch, n + "_none", args.output_dir)
       print(f"{n}_none done. Inference time: ", inference_time)
-      working_batch = tensor_tree_map(lambda x: np.array(x[..., -1].cpu()), working_batch)
-      out = tensor_tree_map(lambda x: np.array(x.cpu()), out)
+      working_batch = tensor_tree_map(lambda x: x[..., -1].cpu().numpy(), working_batch)
+      out = tensor_tree_map(lambda x: x.cpu().numpy(), out)
       result = parse_results(out, working_batch)
 
       dummy_decoy = Decoy(target=n, decoy_id="none.pdb", decoy_path="_", rmsd=-1, rosettascore=-1, gdt_ts=-1, tmscore=-1,danscore=-1)

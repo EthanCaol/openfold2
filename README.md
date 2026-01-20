@@ -36,6 +36,7 @@ export MAX_JOBS=12
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
 export TORCH_CUDA_ARCH_LIST="8.9" # 4070TS
+export BASE_DATA_DIR=/home/ethan/openfold2/openfold/resources
 
 # 安装Python包
 mamba install -y -f environment.yml
@@ -53,17 +54,35 @@ sed -i 's/os\.environ\["TORCH_CUDA_ARCH_LIST"\] = ""/# &/' \
     "${CONDA_PREFIX}/lib/python3.13/site-packages/deepspeed/ops/op_builder/builder.py"
 
 # 下载第三方依赖和模型参数
-proxy_on && bash scripts/install_third_party_dependencies.sh
-proxy_off && bash scripts/download_alphafold_params.sh openfold/resources
-proxy_off && bash scripts/download_openfold_params.sh openfold/resources
-proxy_off && bash scripts/download_openfold_soloseq_params.sh openfold/resources
+proxy_on && bash scripts_download/install_third_party_dependencies.sh
+proxy_off && bash scripts_download/download_alphafold_params.sh $BASE_DATA_DIR
+proxy_off && bash scripts_download/download_openfold_params.sh $BASE_DATA_DIR
+proxy_off && bash scripts_download/download_openfold_soloseq_params.sh $BASE_DATA_DIR
 
 # 跑测试 (重启vscode后运行)
 python3 -m unittest "$@"
 
 # 下载数据库
-bash scripts/dbs/download_alphafold_dbs.sh openfold/resources reduced_dbs
+bash scripts_download/dbs/download_alphafold_dbs.sh $BASE_DATA_DIR
+
+# 运行示例推理
 bash examples/monomer/inference.sh
 
 
-python3 run_pretrained_openfold.py
+
+
+python3 run_pretrained_openfold.py \
+    --fasta_dir examples/monomer/fasta_dir \
+    --template_mmcif_dir $BASE_DATA_DIR/pdb_mmcif/mmcif_files \
+    --use_precomputed_alignments examples/monomer/alignments \
+    --output_dir examples/monomer/output \
+    --config_preset model_1_ptm
+
+
+    --bfd_database_path $BASE_DATA_DIR/small_bfd/bfd-first_non_consensus_sequences.fasta \
+    --mgnify_database_path $BASE_DATA_DIR/mgnify/mgy_clusters_2022_05.fa \
+    --pdb70_database_path $BASE_DATA_DIR/pdb70 \
+    --uniref30_database_path $BASE_DATA_DIR/uniref30 \
+    --uniref90_database_path $BASE_DATA_DIR/uniref90/uniref90.fasta \
+    --uniprot_database_path $BASE_DATA_DIR/uniprot/uniprot.fasta \
+    --pdb_seqres_database_path $BASE_DATA_DIR/pdb_seqres/pdb_seqres.txt \

@@ -1327,7 +1327,7 @@ def find_structural_violations_np(
 
     out = find_structural_violations(batch, atom14_pred_positions, **config)
 
-    to_np = lambda x: np.array(x)
+    to_np = lambda x: x.numpy()
     np_out = tensor_tree_map(to_np, out)
 
     return np_out
@@ -1425,7 +1425,7 @@ def compute_violation_metrics_np(
 
     out = compute_violation_metrics(batch, atom14_pred_positions, violations)
 
-    to_np = lambda x: np.array(x)
+    to_np = lambda x: x.numpy()
     return tree_map(to_np, out, torch.Tensor)
 
 
