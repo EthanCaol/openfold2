@@ -362,12 +362,12 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "fasta_dir",
+        "--fasta_dir",
         type=str,
         help="推理序列的FASTA文件目录, 每个文件包含一个序列",
     )
     parser.add_argument(
-        "template_mmcif_dir",
+        "--template_mmcif_dir",
         type=str,
         help="模板文件的mmCIF目录",
     )

@@ -8,7 +8,7 @@ RAW_DIR="${ROOT_DIR}/raw"
 MMCIF_DIR="${ROOT_DIR}/mmcif_files"
 mkdir -p "${RAW_DIR}"
 
-SNAPSHOT_DATE="20250101"
+SNAPSHOT_DATE="20260101"
 
 if [ -d "${MMCIF_DIR}" ]; then
     echo "| PDB mmCIF 数据库已存在"

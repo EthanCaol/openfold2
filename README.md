@@ -56,8 +56,8 @@ sed -i 's/os\.environ\["TORCH_CUDA_ARCH_LIST"\] = ""/# &/' \
 # 下载第三方依赖和模型参数
 proxy_on && bash scripts_download/install_third_party_dependencies.sh
 proxy_off && bash scripts_download/download_alphafold_params.sh $BASE_DATA_DIR
-proxy_off && bash scripts_download/download_openfold_params.sh $BASE_DATA_DIR
-proxy_off && bash scripts_download/download_openfold_soloseq_params.sh $BASE_DATA_DIR
+proxy_on && bash scripts_download/download_openfold_params.sh $BASE_DATA_DIR
+proxy_on && bash scripts_download/download_openfold_soloseq_params.sh $BASE_DATA_DIR
 
 # 跑测试 (重启vscode后运行)
 python3 -m unittest "$@"
@@ -66,7 +66,7 @@ python3 -m unittest "$@"
 bash scripts_download/dbs/download_alphafold_dbs.sh $BASE_DATA_DIR
 
 # 运行示例推理
-bash examples/monomer/inference.sh
+# bash examples/monomer/inference.sh
 
 
 
